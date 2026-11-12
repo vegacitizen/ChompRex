@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- 배경 -->
+    <path android:fillColor="#7BB661" android:pathData="M24,24m-23,0a23,23 0,1 1,46 0a23,23 0,1 1,-46 0" />
+    <!-- 꼬리 -->
+    <path android:fillColor="#E8552D" android:pathData="M18,22 Q9,21 3,25 Q10,28 18,31 Z" />
+    <!-- 몸통 -->
+    <path android:fillColor="#E8552D" android:pathData="M22,27m-10,0a10,7 0,1 1,20 0a10,7 0,1 1,-20 0" />
+    <!-- 목 -->
+    <path android:fillColor="#E8552D" android:pathData="M24,22 L31,13 L36,20 L30,28 Z" />
+    <!-- 아래턱 -->
+    <path android:fillColor="#9E3A1F" android:pathData="M30,19 L43,22 L41,25 L30,23 Z" />
+    <!-- 머리 -->
+    <path android:fillColor="#E8552D" android:pathData="M28,11 Q36,9 44,13 L44,17 L29,18 Z" />
+    <!-- 이빨 -->
+    <path android:fillColor="#FFFFFF" android:pathData="M34,17.6 L35,20 L36,17.5 Z M38,17.4 L39,19.8 L40,17.3 Z M41.5,17.2 L42.3,19.2 L43.2,17.1 Z" />
+    <!-- 눈 -->
+    <path android:fillColor="#FFFFFF" android:pathData="M34,13.5m-1.6,0a1.6,1.6 0,1 1,3.2 0a1.6,1.6 0,1 1,-3.2 0" />
+    <path android:fillColor="#111111" android:pathData="M34.5,13.5m-0.9,0a0.9,0.9 0,1 1,1.8 0a0.9,0.9 0,1 1,-1.8 0" />
+    <!-- 다리 -->
+    <path android:fillColor="#9E3A1F" android:pathData="M17,31 L20,31 L20,40 L23,40 L23,42 L17,42 Z" />
+    <path android:fillColor="#E8552D" android:pathData="M23,31 L27,31 L27,40 L30,40 L30,42 L23,42 Z" />
+</vector>
