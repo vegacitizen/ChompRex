@@ -160,17 +160,17 @@ function beep(f0, f1, dur, type, vol) {
 
 /* ===================== 게임 상태 ===================== */
 let state = 'menu';           // menu | play | dead | win
-let player, npcs, ores, eggs, bushes, meteors, parts, texts;
+let player, npcs, ores, eggs, bushes, meteors, parts, texts, rings;
 let cam = {x: WORLD / 2, y: WORLD / 2, scale: 1, shake: 0};
 let eaten = 0, oreTimer = 0, meteorTimer = 0, time = 0, curTier = 0;
-let combo = 0, comboT = 0, stamina = 1, dashing = false, hidden = false, deathWhy = '';
+let combo = 0, comboT = 0, stamina = 1, dashing = false, hidden = false, scared = false, deathWhy = '';
 let best = 0;
 try { best = parseFloat(localStorage.getItem('chomprex_best')) || 0; } catch (e) {}
 
 function newGame() {
-  player = {x: WORLD / 2, y: WORLD / 2, r: BASE_R, gm: 1, giantT: 0, eating: null, ang: 0, spd: 0, sharp: 0, face: 1, phase: 0,
+  player = {x: WORLD / 2, y: WORLD / 2, r: BASE_R, gm: 1, giantT: 0, eating: null, ang: 0, spd: 0, sharp: 0, lean: 0, pop: 0, happyT: 0, stepS: false, bl: 0, face: 1, phase: 0,
             mouth: 0, chomp: 0, age: 9, kind: 'rex', col: TIER_COLS[0], dark: shade(TIER_COLS[0], 0.68)};
-  npcs = []; ores = []; eggs = []; bushes = []; meteors = []; parts = []; texts = [];
+  npcs = []; ores = []; eggs = []; bushes = []; meteors = []; parts = []; texts = []; rings = [];
   eaten = 0; oreTimer = 4; meteorTimer = rnd(16, 24); time = 0; curTier = 0;
   combo = 0; comboT = 0; stamina = 1; dashing = false; hidden = false; deathWhy = '';
   cam.x = player.x; cam.y = player.y; cam.scale = Math.min(W, H) / (player.r * 17); cam.shake = 0;
@@ -204,7 +204,7 @@ function spawnNpc(initial) {
   const kd = opts[(Math.random() * opts.length) | 0];
   const col = kd.cols[(Math.random() * kd.cols.length) | 0];
   npcs.push({x: pos.x, y: pos.y, r, gm: 1, giantT: 0, eating: null, kind: kd.k, col, dark: shade(col, 0.7),
-             ang: rnd(0, 6.28), spd: 0, sharp: 0, face: 1, phase: rnd(0, 6), mouth: 0, age: initial ? 9 : 0,
+             ang: rnd(0, 6.28), spd: 0, sharp: 0, lean: 0, pop: 0, happyT: 0, stepS: false, bl: rnd(0, 3), face: 1, phase: rnd(0, 6), mouth: 0, age: initial ? 9 : 0,
              wt: 0, wa: rnd(0, 6.28), aggro: Math.random() < 0.65, greedy: Math.random() < 0.6, chaseT: 0, rest: 0, mode: 0});
 }
 function spawnEgg(initial) {
@@ -259,7 +259,10 @@ function agility(e) {
 // e.ang(진행 방향), e.spd(속력)를 want 방향·top 속도를 향해 갱신한다. 급하게 꺾을수록 속도를 잃고 흙먼지가 크게 인다.
 function steer(e, want, mag, top, ref, dt, turnMul, fx) {
   const A = agility(e), acc = Math.max(top, ref * 0.5) / A.tAcc;
-  if (mag < 0.05) { e.spd = Math.max(0, e.spd - acc * 2.2 * dt); e.sharp = 0; return; }   // 입력이 없으면 미끄러지며 멈춤
+  if (mag < 0.05) {
+    if (fx && e.spd > ref * 0.45 && Math.random() < dt * 30) dust(e, 0.3, 1);
+    e.spd = Math.max(0, e.spd - acc * 2.2 * dt); e.sharp = e.spd > ref * 0.3 ? 0.4 : 0; return;
+  }   // 입력이 없으면 미끄러지며 멈춤
   let da = want - e.ang; da = Math.atan2(Math.sin(da), Math.cos(da));
   const ad = Math.abs(da), frac = Math.min(1, e.spd / ref);
   const sharp = clamp((ad - 0.45) / 2.2, 0, 1);                       // 0 = 완만, 1 = 정반대로 꺾음
@@ -287,6 +290,33 @@ function dust(e, sharp, n) {
   }
 }
 
+/* ===================== 연출 효과 ===================== */
+function ring(x, y, r0, r1, col, life) { rings.push({x, y, r0, r1, col, life, max: life}); }      // 퍼져 나가는 충격파 고리
+function headOf(e) { const m = MOUTH[e.kind], s = ER(e); return {x: e.x + e.face * (m[0] - 0.45) * s, y: e.y + (m[1] - 0.25) * s}; }
+function sweat(e) {                                            // 겁먹거나 지쳤을 때 튀는 땀방울
+  const h = headOf(e), s = ER(e);
+  parts.push({x: h.x, y: h.y, vx: (rnd(-1, 1) - e.face) * s * 1.4, vy: -s * rnd(2, 3.6), r: s * rnd(0.05, 0.08), life: 0.55, max: 0.55, col: '#c9eeff', g: s * 10});
+}
+function steam(e) {                                            // 화났을 때 뿜는 콧김
+  const h = headOf(e), s = ER(e);
+  parts.push({x: h.x, y: h.y - s * 0.2, vx: -e.face * s * rnd(0.6, 1.4), vy: -s * rnd(0.8, 1.6), r: s * rnd(0.1, 0.15), life: 0.5, max: 0.5, col: '#ffffff', dust: 1});
+}
+// 몸 기울임, 꿀꺽 부풀기, 발걸음 먼지 등 매 프레임 갱신되는 몸짓
+function tickAnim(e, ref, dt, near) {
+  e.happyT = Math.max(0, e.happyT - dt); e.pop = Math.max(0, e.pop - dt * 3);
+  const frac = e.spd / ref;
+  const target = e.sharp > 0.05 ? -0.32 * e.sharp : clamp((frac - 0.5) * 0.2, 0, 0.26);   // 달릴 땐 앞으로, 급회전·제동 땐 뒤로
+  e.lean += (target - e.lean) * (1 - Math.exp(-dt * 10));
+  const sg = Math.sin(e.phase) >= 0;
+  if (sg !== e.stepS) {                                        // 한 걸음 디딜 때마다
+    e.stepS = sg;
+    if (near && frac > 0.3 && ER(e) * cam.scale > 16) {
+      dust(e, 0.08, 1);
+      if (e.gm > 3) { dust(e, 0.5, 3); cam.shake = Math.max(cam.shake, 0.06); }           // 거대 공룡의 쿵쿵 발걸음
+    }
+  }
+}
+
 /* ===================== 잡아먹기 ===================== */
 // 먹잇감이 클수록(먹는 쪽 대비) 다 먹는 데 오래 걸린다
 function startEating(e, prey) {
@@ -307,6 +337,8 @@ function tickEating(e, dt) {
   if (E.t >= E.dur) { e.eating = null; finishEat(e, E.prey); }
 }
 function finishEat(e, prey) {
+  e.pop = 1; e.happyT = 0.9;
+  { const m = mouthOf(e); ring(m.x, m.y, ER(e) * 0.2, ER(e) * 1.1, e === player ? '#ffe066' : '#ffffff', 0.35); }
   if (e !== player) {
     if (prey === player) grow(e, prey.r); else if (e.r < player.r * 2.5) grow(e, prey.r * 0.7);
     return;
@@ -324,6 +356,7 @@ function finishEat(e, prey) {
   if (t > curTier) {
     curTier = t; p.col = TIER_COLS[t]; p.dark = shade(p.col, 0.68);
     toast('성장! ' + TIERS[t][1]); beep(440, 880, 0.35, 'triangle', 0.1);
+    ring(p.x, p.y, ER(p) * 0.5, ER(p) * 4, '#ffd54a', 0.6); ring(p.x, p.y, ER(p) * 0.3, ER(p) * 2.6, '#ffffff', 0.45); burst(p.x, p.y, ER(p) * 1.2, '#ffe066', 20);
   }
   if (kgOf(p.r) >= WIN_KG) endGame('win');
 }
@@ -376,7 +409,9 @@ function update(dt) {
     if (kx || ky) { const l = Math.hypot(kx, ky); ix = kx / l; iy = ky / l; }
     // 돌진: 스태미나를 써서 잠깐 빨라진다
     const wantDash = (dashHeld || keys.Space) && Math.hypot(ix, iy) > 0.2 && !p.eating;
+    const was = dashing;
     dashing = wantDash && (dashing ? stamina > 0 : stamina > 0.15);
+    if (dashing && !was) { dust(p, 0.7, 7); beep(240, 520, 0.12, 'triangle', 0.05); }     // 돌진 시작: 땅을 박차는 흙먼지
     stamina = clamp(stamina + (dashing ? -0.5 : 0.22) * dt, 0, 1);
     const mag = Math.min(1, Math.hypot(ix, iy)), ref = speedOf(p.r);
     const top = ref * (p.giantT > 0 ? GIANT_SPEED : 1) * (dashing ? 1.75 : 1) * (p.eating ? 0.35 : 1);
@@ -385,6 +420,8 @@ function update(dt) {
     const fc = Math.cos(p.ang); if (mag > 0.05 && Math.abs(fc) > 0.2) p.face = fc > 0 ? 1 : -1;
     p.phase += p.spd * dt / p.r * 2.4 / Math.sqrt(p.gm);
     if (dashing && Math.random() < dt * 25) dust(p, 0.15, 1);
+    if ((scared || stamina < 0.2) && Math.random() < dt * 8) sweat(p);
+    tickAnim(p, ref, dt, true);
     if (!p.eating && combo > 0) { comboT -= dt; if (comboT <= 0) combo = 0; }
     oreTimer -= dt;
     if (oreTimer <= 0) { if (ores.length < 3) spawnOre(); oreTimer = rnd(6, 11); }
@@ -397,7 +434,7 @@ function update(dt) {
   p.chomp = Math.max(0, p.chomp - dt * 4);
 
   const vr = viewR();
-  let nearEd = 1e9, camMul = 1 + (p.gm - 1) / (GIANT - 1) * 3;
+  let nearEd = 1e9, camMul = 1 + (p.gm - 1) / (GIANT - 1) * 3, danger = false;
   for (let i = npcs.length - 1; i >= 0; i--) {
     const n = npcs[i];
     n.age += dt; tickGiant(n, dt);
@@ -406,7 +443,7 @@ function update(dt) {
     if (d > vr * 3.2 || (n.r < p.r * 0.2 && d > vr * 1.1)) { npcs.splice(i, 1); continue; }
     if (n.gm > 1.2 && d < vr * 1.6) camMul = Math.max(camMul, 1 + (n.gm - 1) / (GIANT - 1) * 1.8);
     const edible = canEat(n);
-    if (n.eating) { tickEating(n, dt); n.mode = 0; n.spd = 0; }
+    if (n.eating) { tickEating(n, dt); n.mode = 0; n.spd = 0; n.lean += (0 - n.lean) * 0.2; n.happyT = Math.max(0, n.happyT - dt); n.pop = Math.max(0, n.pop - dt * 3); }
     else {
       n.mouth *= 0.8;
       const ref = speedOf(n.r) * 0.68; let sp = ref * (n.giantT > 0 ? GIANT_SPEED : 1), want = n.wa, mode = 0;
@@ -437,6 +474,10 @@ function update(dt) {
       n.y = clamp(n.y + Math.sin(n.ang) * n.spd * dt, n.r, WORLD - n.r);
       const c = Math.cos(n.ang); if (Math.abs(c) > 0.25) n.face = c > 0 ? 1 : -1;
       n.phase += n.spd * dt / n.r * 2.4 / Math.sqrt(n.gm);
+      const near = d < vr * 1.3;
+      if (near && mode === 1 && Math.random() < dt * 7) sweat(n);
+      if (near && mode === 2 && Math.random() < dt * 5) steam(n);
+      tickAnim(n, ref, dt, near);
     }
 
     if (!live) continue;
@@ -448,13 +489,15 @@ function update(dt) {
         startEating(p, n); npcs.splice(i, 1);
         burst(n.x, n.y, b, n.col, 6); beep(260, 120, 0.08, 'square', 0.07);
       }
-    } else if (d < touch) {                                   // 큰 공룡에게 잡아먹힘
+    } else if (d < touch * 2.4 + a * 2) danger = true;
+    if (!edible && d < touch) {                               // 큰 공룡에게 잡아먹힘
       if (Math.abs(dx) > 1) n.face = dx > 0 ? 1 : -1;
       burst(p.x, p.y, a, p.col, 18);
       p.eating = null; startEating(n, p);
       die('eaten'); break;
     }
   }
+  scared = live && danger && !hidden;
   if (!p.eating) p.mouth += ((nearEd < 2.2 || p.chomp > 0 ? 1 : 0) - p.mouth) * (1 - Math.exp(-dt * 12));
 
   // 공룡끼리도 큰 쪽이 작은 쪽을 잡아먹음
@@ -487,6 +530,7 @@ function update(dt) {
     if (!who) continue;
     ores.splice(i, 1);
     burst(o.x, o.y, o.r * 1.5, '#8ff3ff', 18);
+    who.pop = 1; ring(who.x, who.y, who.r, who.r * 9, '#8ff3ff', 0.6); ring(who.x, who.y, who.r * 0.5, who.r * 5, '#d9b8ff', 0.45);
     if (who === p) {
       p.giantT = GIANT_TIME;
       toast('마법의 돌! 몸이 ' + GIANT + '배로 커졌다!'); beep(520, 1560, 0.45, 'sine', 0.12);
@@ -503,6 +547,7 @@ function update(dt) {
     meteors.splice(i, 1);
     cam.shake = Math.max(cam.shake, 0.45); beep(140, 30, 0.7, 'sawtooth', 0.14);
     burst(m.x, m.y, m.R * 0.5, '#ff9a3c', 26); burst(m.x, m.y, m.R * 0.35, '#6b5a48', 14);
+    ring(m.x, m.y, m.R * 0.3, m.R * 1.8, '#ffb060', 0.5); ring(m.x, m.y, m.R * 0.2, m.R * 1.2, '#ffffff', 0.35);
     for (let j = npcs.length - 1; j >= 0; j--) {
       const n = npcs[j];
       if (n.gm < 1.5 && Math.hypot(n.x - m.x, n.y - m.y) < m.R) { burst(n.x, n.y, n.r, n.col, 8); npcs.splice(j, 1); }
@@ -516,7 +561,7 @@ function update(dt) {
     const g = eggs[i], d = Math.hypot(g.x - p.x, g.y - p.y);
     if (d > vr * 3.2 || (g.r < p.r * 0.15 && d > vr * 1.1)) { eggs.splice(i, 1); continue; }
     if (live && d < ER(p) * 0.9 + g.r * 0.3) {
-      eggs.splice(i, 1); grow(p, g.r); p.chomp = 1;
+      eggs.splice(i, 1); grow(p, g.r); p.chomp = 1; p.pop = Math.max(p.pop, 0.5); p.happyT = Math.max(p.happyT, 0.35);
       burst(g.x, g.y, g.r, '#fff3c4', 5); beep(700, 500, 0.06, 'sine', 0.05);
       if (kgOf(p.r) >= WIN_KG) endGame('win');
     }
@@ -529,9 +574,10 @@ function update(dt) {
   if (bushes.length < BUSH_TARGET) spawnBush(false);
 
   for (let i = parts.length - 1; i >= 0; i--) {
-    const q = parts[i]; q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.92; q.vy *= 0.92; if (q.dust) q.r *= 1 + dt * 1.6;
+    const q = parts[i]; q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.92; q.vy *= 0.92; if (q.dust) q.r *= 1 + dt * 1.6; if (q.g) q.vy += q.g * dt;
     if (q.life <= 0) parts.splice(i, 1);
   }
+  for (let i = rings.length - 1; i >= 0; i--) { rings[i].life -= dt; if (rings[i].life <= 0) rings.splice(i, 1); }
   for (let i = texts.length - 1; i >= 0; i--) { const t = texts[i]; t.life -= dt; t.y -= ER(p) * 1.2 * dt; if (t.life <= 0) texts.splice(i, 1); }
 
   // 카메라: 몸이 커질수록(거대 공룡이 나타나도) 화면이 넓어짐
@@ -557,9 +603,33 @@ function leg(x, y0, len, sw, w) {
   const fx = x + sw * 0.26, fy = y0 + len - Math.abs(sw) * 0.07;
   ctx.lineTo(fx, fy); ctx.lineTo(fx + 0.15, fy); ctx.stroke();
 }
+// 표정: 0 보통, 1 겁먹음, 2 화남, 3 기쁨, 4 힘줌(먹는 중), 5 기절(잡아먹히는 중), 6 깜빡임, 7 반짝(마법의 돌 발견)
+let EMO = 0;
 function eye(x, y, s) {
-  ctx.fillStyle = '#fff'; ell(x, y, s, s);
-  ctx.fillStyle = '#111'; ell(x + s * 0.3, y, s * 0.55, s * 0.55);
+  if (EMO >= 3 && EMO <= 6) {
+    ctx.strokeStyle = '#111'; ctx.lineWidth = s * 0.5; ctx.beginPath();
+    if (EMO === 3) ctx.arc(x, y + s * 0.5, s * 0.9, Math.PI * 1.15, Math.PI * 1.85);                 // ^ 웃는 눈
+    else if (EMO === 4) { ctx.moveTo(x - s * 0.8, y - s * 0.7); ctx.lineTo(x + s * 0.6, y); ctx.lineTo(x - s * 0.8, y + s * 0.7); }   // > 질끈
+    else if (EMO === 5) { ctx.moveTo(x - s, y - s); ctx.lineTo(x + s, y + s); ctx.moveTo(x + s, y - s); ctx.lineTo(x - s, y + s); }    // X
+    else { ctx.moveTo(x - s, y); ctx.lineTo(x + s, y); }                                              // 깜빡
+    ctx.stroke(); return;
+  }
+  const k = EMO === 1 ? 1.5 : EMO === 7 ? 1.25 : 1;
+  ctx.fillStyle = '#fff'; ell(x, y, s * k, s * k);
+  if (EMO === 1) { ctx.fillStyle = '#111'; ell(x + s * 0.2, y, s * 0.3, s * 0.3); }                   // 휘둥그레진 눈
+  else if (EMO === 7) { ctx.fillStyle = '#19b8e6'; ell(x + s * 0.2, y, s * 0.75, s * 0.75); ctx.fillStyle = '#fff'; ell(x + s * 0.45, y - s * 0.3, s * 0.28, s * 0.28); }
+  else { ctx.fillStyle = EMO === 2 ? '#8a0000' : '#111'; ell(x + s * 0.3, y, s * 0.55, s * 0.55); }
+  if (EMO === 2) {                                                                                     // 치켜뜬 눈썹
+    ctx.strokeStyle = '#201008'; ctx.lineWidth = s * 0.55; ctx.beginPath();
+    ctx.moveTo(x - s * 1.3, y - s * 1.7); ctx.lineTo(x + s * 1.2, y - s * 0.6); ctx.stroke();
+  }
+}
+function emoOf(e, isPlayer) {
+  if (e.eating) return 4;
+  if (e.happyT > 0) return 3;
+  if (isPlayer) { if (state !== 'play') return 0; if (scared) return 1; if (dashing || e.gm > 1.5) return 2; }
+  else { if (e.mode === 1) return 1; if (e.mode === 3) return 7; if (e.mode === 2 || e.gm > 1.5) return 2; }
+  return (time + e.bl) % 3.4 < 0.13 ? 6 : 0;
 }
 // 단위 좌표(반지름 = 1), 오른쪽을 바라보는 옆모습
 function drawDino(d) {
@@ -652,8 +722,22 @@ function drawEntity(e, isPlayer) {
     g.addColorStop(0, isPlayer ? 'rgba(120,240,255,' + a + ')' : 'rgba(255,90,60,' + a + ')'); g.addColorStop(1, 'rgba(190,120,255,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, pr * pulse * 1.25, 0, 6.2832); ctx.fill();
   }
+  const emo = emoOf(e, isPlayer), ref = speedOf(e.r) * (isPlayer ? 1 : 0.68), frac = e.spd / ref;
+  if (frac > 1.2 && pr > 5) {                                 // 빠르게 달릴 때의 속도선
+    const ux = -Math.cos(e.ang), uy = -Math.sin(e.ang);
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = Math.max(1.5, pr * 0.06); ctx.lineCap = 'round'; ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+      const o = (i - 1.5) * pr * 0.42, w = ((time * 3 + i * 0.37) % 1), a = pr * (1.3 + w * 0.8), len = pr * (0.5 + 0.5 * Math.min(1, frac - 1));
+      ctx.moveTo(sx + ux * a - uy * o, sy + uy * a + ux * o); ctx.lineTo(sx + ux * (a + len) - uy * o, sy + uy * (a + len) + ux * o);
+    }
+    ctx.stroke();
+  }
+  const bob = Math.abs(Math.sin(e.phase)) * 0.06 * Math.min(1, frac * 1.5);          // 걸음에 맞춰 들썩임
+  const shiver = emo === 1 ? Math.sin(time * 45) * 0.03 : 0;                            // 겁먹으면 부들부들
+  const pp = Math.sin(e.pop * Math.PI);                                                 // 꿀꺽 삼킨 뒤 볼록
   ctx.save(); ctx.translate(sx, sy); ctx.scale(pr * e.face, pr);
-  drawDino(e);
+  ctx.translate(shiver, 0.95); ctx.rotate(e.lean); ctx.scale(1 + pp * 0.16, 1 - pp * 0.1 + bob * 0.5); ctx.translate(0, -0.95 - bob);
+  EMO = emo; drawDino(e); EMO = 0;
   ctx.restore();
   const E = e.eating;
   if (E) {                                                    // 입에 문 먹잇감: 발버둥 치며 점점 줄어든다
@@ -661,7 +745,7 @@ function drawEntity(e, isPlayer) {
     const mx = sx + e.face * m[0] * pr, my = sy + m[1] * pr;
     ctx.save(); ctx.translate(mx, my); ctx.rotate(Math.sin(E.t * 28) * 0.35 + 0.4 * e.face);
     ctx.globalAlpha = fade * (1 - k * 0.3); ctx.scale(qs * e.face, qs);
-    drawDino(E.prey); ctx.restore();
+    EMO = 5; drawDino(E.prey); EMO = 0; ctx.restore();
     if (isPlayer && E.dur > 0.35) {                           // 먹는 진행도
       const ry = sy - pr * 1.6, rr = Math.max(9, pr * 0.3);
       ctx.globalAlpha = 1; ctx.lineWidth = Math.max(3, rr * 0.35); ctx.lineCap = 'round';
@@ -794,6 +878,11 @@ function render() {
     ctx.globalAlpha = clamp(q.life / q.max, 0, 1) * (q.dust ? 0.6 : 1); ctx.fillStyle = q.col;
     ctx.beginPath(); ctx.arc(SX(q.x), SY(q.y), Math.max(1, q.r * cam.scale), 0, 6.2832); ctx.fill();
   }
+  for (const q of rings) {
+    const k = 1 - q.life / q.max, rr = (q.r0 + (q.r1 - q.r0) * (1 - (1 - k) * (1 - k))) * cam.scale;
+    ctx.globalAlpha = (1 - k) * 0.8; ctx.strokeStyle = q.col; ctx.lineWidth = Math.max(2, rr * 0.08 * (1 - k) + 1.5);
+    ctx.beginPath(); ctx.ellipse(SX(q.x), SY(q.y), rr, rr * 0.8, 0, 0, 6.2832); ctx.stroke();
+  }
   ctx.globalAlpha = 1;
   for (const m of meteors) drawMeteor(m, true);
   ctx.textAlign = 'center';
@@ -892,7 +981,7 @@ updateHud();
 requestAnimationFrame(frame);
 window.__game = {get state() { return state; }, get player() { return player; }, get npcs() { return npcs; }, get ores() { return ores; },
   get eggs() { return eggs; }, get bushes() { return bushes; }, get meteors() { return meteors; }, get combo() { return combo; },
-  get stamina() { return stamina; }, get hidden() { return hidden; }, get why() { return deathWhy; },
+  get stamina() { return stamina; }, get hidden() { return hidden; }, get scared() { return scared; }, get why() { return deathWhy; },
   set meteorTimer(v) { meteorTimer = v; }, set oreTimer(v) { oreTimer = v; }, set dash(v) { dashHeld = v; },
   input, kgOf, ER, speedOf, agility, spawnOre, spawnMeteor, canEat};
 </script>
