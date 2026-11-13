@@ -12,7 +12,6 @@
   #hud{position:fixed;inset:0;pointer-events:none;
     padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));
     text-shadow:0 2px 3px rgba(0,0,0,.65)}
-  #hud .l{position:absolute;left:inherit;top:inherit}
   #hudL{float:left}
   #hudR{float:right;text-align:right}
   #species{font-size:20px;font-weight:800}
@@ -20,25 +19,34 @@
   #goal{width:150px;height:7px;border-radius:4px;background:rgba(0,0,0,.35);margin-top:5px;overflow:hidden}
   #goalFill{height:100%;width:0;background:#ffd54a}
   #count,#best{font-size:15px;font-weight:600}
-  #powerWrap{position:absolute;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);
-    width:min(46vw,300px);text-align:center;display:none}
+  #mid{position:absolute;left:50%;top:max(10px,env(safe-area-inset-top));transform:translateX(-50%);
+    width:min(46vw,300px);text-align:center}
+  #powerWrap{display:none}
   #powerLabel{font-size:14px;font-weight:800;color:#bff6ff}
   #powerBar{height:10px;border-radius:5px;background:rgba(0,0,0,.4);overflow:hidden;margin-top:3px}
   #powerFill{height:100%;width:100%;background:linear-gradient(90deg,#4de8ff,#c58bff)}
-  #toast{position:absolute;left:50%;top:26%;transform:translateX(-50%);font-size:26px;font-weight:900;
+  #combo{font-size:19px;font-weight:900;color:#ffb347;margin-top:4px;display:none}
+  #hide{font-size:14px;font-weight:800;color:#b9ffb0;margin-top:4px;display:none}
+  #toast{position:absolute;left:50%;top:30%;transform:translateX(-50%);font-size:26px;font-weight:900;
     color:#ffe066;opacity:0;transition:opacity .35s;white-space:nowrap}
+  #dash{position:fixed;right:max(22px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom));
+    width:88px;height:88px;border-radius:50%;display:none;align-items:center;justify-content:center;
+    pointer-events:auto;touch-action:none;background:conic-gradient(#ffb52e 100%,rgba(0,0,0,.4) 0)}
+  #dash span{width:70px;height:70px;border-radius:50%;background:rgba(40,30,10,.78);display:flex;align-items:center;
+    justify-content:center;font-size:17px;font-weight:900;color:#ffe0a0}
+  #dash.on span{background:rgba(255,181,46,.85);color:#3a2200}
   #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:rgba(8,24,14,.62);padding:16px;box-sizing:border-box}
-  #panel{max-width:520px;width:100%;max-height:100%;overflow:auto;background:rgba(20,48,28,.92);
-    border:2px solid #9bd66b;border-radius:18px;padding:18px 22px;box-sizing:border-box;text-align:center;
+    background:rgba(8,24,14,.62);padding:12px;box-sizing:border-box}
+  #panel{max-width:560px;width:100%;max-height:100%;overflow:auto;background:rgba(20,48,28,.92);
+    border:2px solid #9bd66b;border-radius:18px;padding:14px 22px;box-sizing:border-box;text-align:center;
     box-shadow:0 10px 40px rgba(0,0,0,.5)}
-  #panel h1{margin:0 0 4px;font-size:34px;letter-spacing:1px;color:#ffe066}
-  #panel h2{margin:0 0 10px;font-size:15px;font-weight:600;opacity:.9}
-  #panel ul{margin:10px 0 14px;padding-left:20px;text-align:left;font-size:14px;line-height:1.55}
+  #panel h1{margin:0 0 2px;font-size:30px;letter-spacing:1px;color:#ffe066}
+  #panel h2{margin:0 0 6px;font-size:14px;font-weight:600;opacity:.9}
+  #panel ul{margin:6px 0 12px;padding-left:20px;text-align:left;font-size:13.5px;line-height:1.5}
   #panel .res{font-size:17px;line-height:1.6;margin:8px 0 14px}
-  .g{color:#9dff8a;font-weight:700}.r{color:#ff8a7a;font-weight:700}.c{color:#7fe9ff;font-weight:700}
+  .g{color:#9dff8a;font-weight:700}.r{color:#ff8a7a;font-weight:700}.c{color:#7fe9ff;font-weight:700}.o{color:#ffc46b;font-weight:700}
   #btn{pointer-events:auto;border:0;border-radius:14px;background:#ffb52e;color:#3a2200;font-size:20px;
-    font-weight:900;padding:12px 38px;box-shadow:0 5px 0 #b06f00;font-family:inherit}
+    font-weight:900;padding:11px 38px;box-shadow:0 5px 0 #b06f00;font-family:inherit}
   #btn:active{transform:translateY(3px);box-shadow:0 2px 0 #b06f00}
 </style>
 </head>
@@ -54,12 +62,17 @@
     <div id="count"></div>
     <div id="best"></div>
   </div>
-  <div id="powerWrap">
-    <div id="powerLabel">신비의 광석 파워!</div>
-    <div id="powerBar"><div id="powerFill"></div></div>
+  <div id="mid">
+    <div id="powerWrap">
+      <div id="powerLabel">거대화!</div>
+      <div id="powerBar"><div id="powerFill"></div></div>
+    </div>
+    <div id="combo"></div>
+    <div id="hide">🌿 덤불에 은신 중</div>
   </div>
   <div id="toast"></div>
 </div>
+<div id="dash"><span>돌진</span></div>
 <div id="overlay"><div id="panel"></div></div>
 
 <script>
@@ -70,12 +83,18 @@ const BASE_R = 18;            // 시작 반지름
 const BASE_KG = 3;            // 시작 몸무게(kg)
 const WIN_KG = 20000;         // 승리 몸무게
 const EAT_RATIO = 1.08;       // 내 크기의 이 배수 이하까지 "비슷한 크기"로 보고 먹을 수 있음
-const POWER_TIME = 8;         // 광석 효과 지속(초)
+const GIANT = 10;             // 마법의 돌: 몸 크기 배수
+const GIANT_SPEED = 1.5;      // 마법의 돌: 속도 배수
+const GIANT_TIME = 8;         // 플레이어 거대화 지속(초)
+const NPC_GIANT_TIME = 6;     // 다른 공룡 거대화 지속(초)
+const COMBO_WINDOW = 3.5;     // 콤보 유지 시간(초)
 const NPC_TARGET = 40;        // 주변 공룡 수
+const EGG_TARGET = 20, BUSH_TARGET = 5;
 const TIERS = [
   [0, '콤프소그나투스'], [12, '벨로시랩터'], [60, '데이노니쿠스'], [300, '딜로포사우루스'],
   [900, '케라토사우루스'], [2200, '알로사우루스'], [7000, '티라노사우루스']
 ];
+const TIER_COLS = ['#e8552d', '#e8702d', '#e04848', '#d2406a', '#c2452f', '#b0344f', '#9c2a2a'];
 const KINDS = [
   {k:'raptor', min:0,  cols:['#c9a24b','#b5793a','#8f9a4a','#a8b56b']},
   {k:'para',   min:14, cols:['#5fa8a0','#7d9bd1','#6fb58a']},
@@ -84,12 +103,15 @@ const KINDS = [
   {k:'ankylo', min:16, cols:['#8c7a66','#77808a','#9a8a5c']},
   {k:'sauro',  min:30, cols:['#6f8fae','#8aa07a','#9a8fb0']}
 ];
+// 종류별 입 위치(단위 좌표)
+const MOUTH = {rex:[1.45,-0.58], raptor:[1.3,-0.6], para:[1.3,-0.6], trike:[1.5,0.12], stego:[1.42,0.24], ankylo:[1.42,0.24], sauro:[1.62,-1.52]};
 
 /* ===================== 유틸 ===================== */
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const kgOf = r => BASE_KG * Math.pow(r / BASE_R, 3);
 const speedOf = r => 170 * Math.pow(r / BASE_R, 0.6);
+const ER = e => e.r * e.gm;                    // 현재 보이는(거대화 반영) 반지름
 function hash(x, y, s) {
   let n = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041) | 0;
   n = Math.imul(n ^ (n >>> 13), 1274126177);
@@ -138,50 +160,84 @@ function beep(f0, f1, dur, type, vol) {
 
 /* ===================== 게임 상태 ===================== */
 let state = 'menu';           // menu | play | dead | win
-let player, npcs, ores, parts, texts;
+let player, npcs, ores, eggs, bushes, meteors, parts, texts;
 let cam = {x: WORLD / 2, y: WORLD / 2, scale: 1, shake: 0};
-let eaten = 0, power = 0, oreTimer = 0, time = 0, deadT = 0, curTier = 0;
+let eaten = 0, oreTimer = 0, meteorTimer = 0, time = 0, curTier = 0;
+let combo = 0, comboT = 0, stamina = 1, dashing = false, hidden = false, deathWhy = '';
 let best = 0;
 try { best = parseFloat(localStorage.getItem('chomprex_best')) || 0; } catch (e) {}
 
 function newGame() {
-  player = {x: WORLD / 2, y: WORLD / 2, r: BASE_R, vx: 0, vy: 0, face: 1, phase: 0, mouth: 0, chomp: 0,
-            kind: 'rex', col: '#e8552d', dark: shade('#e8552d', 0.68)};
-  npcs = []; ores = []; parts = []; texts = [];
-  eaten = 0; power = 0; oreTimer = 8; time = 0; deadT = 0; curTier = 0;
+  player = {x: WORLD / 2, y: WORLD / 2, r: BASE_R, gm: 1, giantT: 0, eating: null, vx: 0, vy: 0, face: 1, phase: 0,
+            mouth: 0, chomp: 0, age: 9, kind: 'rex', col: TIER_COLS[0], dark: shade(TIER_COLS[0], 0.68)};
+  npcs = []; ores = []; eggs = []; bushes = []; meteors = []; parts = []; texts = [];
+  eaten = 0; oreTimer = 4; meteorTimer = rnd(16, 24); time = 0; curTier = 0;
+  combo = 0; comboT = 0; stamina = 1; dashing = false; hidden = false; deathWhy = '';
   cam.x = player.x; cam.y = player.y; cam.scale = Math.min(W, H) / (player.r * 17); cam.shake = 0;
   for (let i = 0; i < NPC_TARGET; i++) spawnNpc(true);
+  for (let i = 0; i < EGG_TARGET; i++) spawnEgg(true);
+  for (let i = 0; i < BUSH_TARGET; i++) spawnBush(true);
 }
 const viewR = () => Math.hypot(W, H) / 2 / cam.scale;
-const canEat = n => power > 0 || n.r <= player.r * EAT_RATIO;
+const canEat = n => ER(n) <= ER(player) * EAT_RATIO;
+const inWorld = (x, y, m) => x > m && y > m && x < WORLD - m && y < WORLD - m;
 
+// 플레이어 주변 고리 모양 영역에서 맵 안쪽 좌표를 고른다
+function ringPos(d0, d1, m) {
+  for (let t = 0; t < 12; t++) {
+    const a = rnd(0, 6.28), d = rnd(d0, d1);
+    const x = player.x + Math.cos(a) * d, y = player.y + Math.sin(a) * d;
+    if (inWorld(x, y, m)) return {x, y};
+  }
+  return null;
+}
 function spawnNpc(initial) {
-  const vr = viewR();
+  const vr = viewR(), giant = player.giantT > 0;
   // 크기 분포: 대부분 먹잇감, 일부는 비슷한 크기, 일부는 위험한 큰 공룡
   const u = Math.random();
-  let f = u < 0.64 ? rnd(0.32, 0.92) : u < 0.76 ? rnd(0.95, 1.07) : rnd(1.22, 2.3);
+  const f = u < 0.64 ? rnd(0.32, 0.92) : u < 0.76 ? rnd(0.95, 1.07) : rnd(1.22, 2.3);
   const r = Math.max(8, player.r * f);
-  let x, y, tries = 0;
-  do {
-    const a = rnd(0, Math.PI * 2);
-    const d = initial ? rnd(player.r * (f > 1.08 ? 13 : 6), vr * 2.2) : rnd(vr * 1.08, vr * 2.1);
-    x = player.x + Math.cos(a) * d; y = player.y + Math.sin(a) * d;
-  } while ((x < r || y < r || x > WORLD - r || y > WORLD - r) && ++tries < 12);
-  if (tries >= 12) return;
+  const pos = initial ? ringPos(player.r * (f > 1.08 ? 13 : 6), vr * 2.2, r)
+            : giant ? ringPos(vr * 0.7, vr * 1.3, r) : ringPos(vr * 1.08, vr * 2.1, r);
+  if (!pos) return;
   const opts = KINDS.filter(k => r >= k.min);
   const kd = opts[(Math.random() * opts.length) | 0];
   const col = kd.cols[(Math.random() * kd.cols.length) | 0];
-  npcs.push({x, y, r, kind: kd.k, col, dark: shade(col, 0.7), ang: rnd(0, 6.28), face: 1, phase: rnd(0, 6),
-             wt: 0, wa: rnd(0, 6.28), aggro: Math.random() < 0.65, chaseT: 0, rest: 0, mode: 0});
+  npcs.push({x: pos.x, y: pos.y, r, gm: 1, giantT: 0, eating: null, kind: kd.k, col, dark: shade(col, 0.7),
+             ang: rnd(0, 6.28), face: 1, phase: rnd(0, 6), mouth: 0, age: initial ? 9 : 0,
+             wt: 0, wa: rnd(0, 6.28), aggro: Math.random() < 0.65, greedy: Math.random() < 0.6, chaseT: 0, rest: 0, mode: 0});
 }
-function spawnOre() {
-  const vr = viewR();
-  for (let t = 0; t < 12; t++) {
-    const a = rnd(0, 6.28), d = rnd(vr * 1.2, vr * 2.8);
-    const x = player.x + Math.cos(a) * d, y = player.y + Math.sin(a) * d;
-    const r = Math.max(11, player.r * 0.55);
-    if (x > r * 2 && y > r * 2 && x < WORLD - r * 2 && y < WORLD - r * 2) { ores.push({x, y, r, t: rnd(0, 6)}); return; }
+function spawnEgg(initial) {
+  const vr = viewR(), r = player.r * rnd(0.3, 0.4);
+  const pos = initial ? ringPos(player.r * 3, vr * 2.2, r) : ringPos(vr * 1.05, vr * 2.2, r);
+  if (pos) eggs.push({x: pos.x, y: pos.y, r, col: ['#f4ecd6', '#e8f0d0', '#f3dcc0'][(Math.random() * 3) | 0], rot: rnd(-0.4, 0.4)});
+}
+function spawnBush(initial) {
+  const vr = viewR(), r = player.r * rnd(3.2, 4.6);
+  const pos = initial ? ringPos(player.r * 8, vr * 2.2, r) : ringPos(vr * 1.1 + r, vr * 2.6, r);
+  if (pos) bushes.push({x: pos.x, y: pos.y, r, seed: (Math.random() * 1e6) | 0});
+}
+// 마법의 돌: 화면 안 임의의 위치에 생겼다가 일정 시간 뒤 사라진다
+function spawnOre(x, y) {
+  if (x === undefined) {
+    for (let t = 0; t < 14; t++) {
+      x = cam.x + rnd(-0.44, 0.44) * W / cam.scale; y = cam.y + rnd(-0.4, 0.4) * H / cam.scale;
+      if (inWorld(x, y, 40) && Math.hypot(x - player.x, y - player.y) > ER(player) * 3) break;
+    }
+    if (!inWorld(x, y, 40)) return;
   }
+  ores.push({x, y, r: Math.max(11, player.r * 0.55), t: 0, life: rnd(9, 14)});
+}
+// 운석: 경고 표시 후 떨어져 범위 안의 공룡을 쓸어버리고 마법의 돌을 남긴다
+function spawnMeteor(x, y) {
+  const R = player.r * 4.5;
+  if (x === undefined) {
+    if (Math.random() < 0.35) { x = player.x + rnd(-3, 3) * player.r; y = player.y + rnd(-3, 3) * player.r; }
+    else { x = cam.x + rnd(-0.4, 0.4) * W / cam.scale; y = cam.y + rnd(-0.35, 0.35) * H / cam.scale; }
+  }
+  x = clamp(x, R, WORLD - R); y = clamp(y, R, WORLD - R);
+  meteors.push({x, y, R, t: 2.4, max: 2.4});
+  toast('운석 낙하! 피하세요!'); beep(900, 300, 0.5, 'sawtooth', 0.06);
 }
 function burst(x, y, r, col, n) {
   for (let i = 0; i < n; i++) {
@@ -190,10 +246,59 @@ function burst(x, y, r, col, n) {
   }
 }
 function grow(e, preyR) { e.r = Math.cbrt(e.r * e.r * e.r + preyR * preyR * preyR); }  // 먹은 만큼 몸무게가 더해짐
+function mouthOf(e) { const m = MOUTH[e.kind], s = ER(e); return {x: e.x + e.face * m[0] * s, y: e.y + m[1] * s}; }
+
+/* ===================== 잡아먹기 ===================== */
+// 먹잇감이 클수록(먹는 쪽 대비) 다 먹는 데 오래 걸린다
+function startEating(e, prey) {
+  const ratio = Math.min(1.2, ER(prey) / ER(e));
+  prey.eating = null;
+  e.eating = {prey, t: 0, dur: 0.12 + 1.4 * Math.pow(ratio, 1.5), bite: 0, size: ER(prey)};
+}
+function tickEating(e, dt) {
+  const E = e.eating; if (!E) return;
+  E.t += dt; E.bite -= dt;
+  e.mouth = 0.5 + 0.5 * Math.sin(E.t * 22);
+  if (E.bite <= 0) {                                     // 한 입씩 뜯을 때마다 조각이 튄다
+    E.bite = 0.17;
+    const m = mouthOf(e);
+    burst(m.x, m.y, E.size * (1 - 0.7 * E.t / E.dur) * 0.6, E.prey.col, 3);
+    if (e === player) beep(170 + rnd(0, 70), 90, 0.07, 'square', 0.05);
+  }
+  if (E.t >= E.dur) { e.eating = null; finishEat(e, E.prey); }
+}
+function finishEat(e, prey) {
+  if (e !== player) {
+    if (prey === player) grow(e, prey.r); else if (e.r < player.r * 2.5) grow(e, prey.r * 0.7);
+    return;
+  }
+  if (state !== 'play') return;
+  const p = player;
+  combo++; comboT = COMBO_WINDOW;
+  const bonus = Math.min(1, (combo - 1) * 0.1);           // 연속으로 먹으면 보너스 성장
+  const before = kgOf(p.r);
+  grow(p, prey.r * Math.cbrt(1 + bonus));
+  eaten++; p.chomp = 1;
+  texts.push({x: p.x, y: p.y - ER(p) * 1.2, s: '+' + fmtKg(kgOf(p.r) - before) + (combo > 1 ? '  콤보 x' + combo : ''), life: 1.1, big: combo > 1});
+  beep(combo > 1 ? 300 + combo * 40 : 300, 80, 0.16, 'square', 0.09);
+  const t = tierOf(kgOf(p.r));
+  if (t > curTier) {
+    curTier = t; p.col = TIER_COLS[t]; p.dark = shade(p.col, 0.68);
+    toast('성장! ' + TIERS[t][1]); beep(440, 880, 0.35, 'triangle', 0.1);
+  }
+  if (kgOf(p.r) >= WIN_KG) endGame('win');
+}
+function tickGiant(e, dt) {
+  if (e.giantT > 0) { e.giantT -= dt; if (e.giantT <= 0) { e.giantT = 0; if (e === player) beep(500, 180, 0.3, 'sine', 0.08); } }
+  const target = e.giantT > 0 ? GIANT : 1;
+  if (e.gm !== target) { e.gm += (target - e.gm) * (1 - Math.exp(-dt * 5)); if (Math.abs(target - e.gm) < 0.02) e.gm = target; }
+}
+function die(why) { deathWhy = why; cam.shake = 0.5; beep(220, 40, 0.6, 'sawtooth', 0.12); endGame('dead'); }
 
 /* ===================== 입력 ===================== */
 const input = {id: -1, ox: 0, oy: 0, x: 0, y: 0, dx: 0, dy: 0};
 const keys = {};
+let dashHeld = false;
 cv.addEventListener('pointerdown', e => {
   initAudio();
   if (input.id !== -1) return;
@@ -211,7 +316,10 @@ cv.addEventListener('pointermove', e => {
 });
 function pointerEnd(e) { if (e.pointerId === input.id) { input.id = -1; input.dx = input.dy = 0; } }
 cv.addEventListener('pointerup', pointerEnd); cv.addEventListener('pointercancel', pointerEnd);
-window.addEventListener('keydown', e => { keys[e.code] = true; });
+const dashEl = document.getElementById('dash');
+dashEl.addEventListener('pointerdown', e => { initAudio(); dashHeld = true; e.preventDefault(); try { dashEl.setPointerCapture(e.pointerId); } catch (err) {} });
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n => dashEl.addEventListener(n, () => { dashHeld = false; }));
+window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Space') e.preventDefault(); });
 window.addEventListener('keyup', e => { keys[e.code] = false; });
 window.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -220,132 +328,191 @@ function update(dt) {
   time += dt;
   const live = state === 'play';
   const p = player;
+  tickGiant(p, dt);
 
   if (live) {
     let ix = input.dx, iy = input.dy;
     const kx = (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0);
     const ky = (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0);
     if (kx || ky) { const l = Math.hypot(kx, ky); ix = kx / l; iy = ky / l; }
-    const sp = speedOf(p.r) * (power > 0 ? 1.15 : 1);
+    // 돌진: 스태미나를 써서 잠깐 빨라진다
+    const wantDash = (dashHeld || keys.Space) && Math.hypot(ix, iy) > 0.2 && !p.eating;
+    dashing = wantDash && (dashing ? stamina > 0 : stamina > 0.15);
+    stamina = clamp(stamina + (dashing ? -0.5 : 0.22) * dt, 0, 1);
+    const sp = speedOf(p.r) * (p.giantT > 0 ? GIANT_SPEED : 1) * (dashing ? 1.75 : 1) * (p.eating ? 0.35 : 1);
     const k = 1 - Math.exp(-dt * 9);
     p.vx += (ix * sp - p.vx) * k; p.vy += (iy * sp - p.vy) * k;
     p.x = clamp(p.x + p.vx * dt, p.r, WORLD - p.r); p.y = clamp(p.y + p.vy * dt, p.r, WORLD - p.r);
     if (Math.abs(ix) > 0.12) p.face = ix > 0 ? 1 : -1;
-    p.phase += Math.hypot(p.vx, p.vy) * dt / p.r * 2.4;
-    if (power > 0) { power -= dt; if (power <= 0) { power = 0; beep(500, 180, 0.3, 'sine', 0.08); } }
+    p.phase += Math.hypot(p.vx, p.vy) * dt / p.r * 2.4 / Math.sqrt(p.gm);
+    if (dashing && Math.random() < dt * 40) {
+      const s = ER(p);
+      parts.push({x: p.x - p.face * s * 0.6, y: p.y + s * 0.9, vx: rnd(-1, 1) * s, vy: -rnd(0, 1) * s, r: rnd(0.12, 0.22) * s, life: 0.4, max: 0.4, col: '#e9dfb5'});
+    }
+    if (!p.eating && combo > 0) { comboT -= dt; if (comboT <= 0) combo = 0; }
     oreTimer -= dt;
-    if (oreTimer <= 0) { if (ores.length < 2) spawnOre(); oreTimer = rnd(20, 34); }
-  }
+    if (oreTimer <= 0) { if (ores.length < 3) spawnOre(); oreTimer = rnd(6, 11); }
+    meteorTimer -= dt;
+    if (meteorTimer <= 0) { spawnMeteor(); meteorTimer = rnd(22, 36); }
+    hidden = false;
+    if (p.gm < 1.5) for (const b of bushes) if (ER(p) < b.r * 0.7 && Math.hypot(b.x - p.x, b.y - p.y) < b.r * 0.75) { hidden = true; break; }
+  } else { dashing = false; hidden = false; }
+  tickEating(p, dt);
   p.chomp = Math.max(0, p.chomp - dt * 4);
 
   const vr = viewR();
-  let nearEd = 1e9;
+  let nearEd = 1e9, camMul = 1 + (p.gm - 1) / (GIANT - 1) * 3;
   for (let i = npcs.length - 1; i >= 0; i--) {
     const n = npcs[i];
+    n.age += dt; tickGiant(n, dt);
     const dx = p.x - n.x, dy = p.y - n.y, d = Math.hypot(dx, dy) || 1;
     // 멀어졌거나 너무 작아진 공룡은 정리
     if (d > vr * 3.2 || (n.r < p.r * 0.2 && d > vr * 1.1)) { npcs.splice(i, 1); continue; }
+    if (n.gm > 1.2 && d < vr * 1.6) camMul = Math.max(camMul, 1 + (n.gm - 1) / (GIANT - 1) * 1.8);
     const edible = canEat(n);
-    let sp = speedOf(n.r) * 0.62, want = n.wa, turn = 2.5, mode = 0;
-    n.rest = Math.max(0, n.rest - dt);
-    if (live && edible && d < (p.r + n.r) * 3.4) {            // 도망
-      want = Math.atan2(-dy, -dx); sp *= 1.3; turn = 6; mode = 1;
-    } else if (live && !edible && n.aggro && n.rest <= 0 && d < n.r * 3.5 + p.r * 2) {   // 추격
-      want = Math.atan2(dy, dx); sp *= 1.1; turn = 5; mode = 2;
-      n.chaseT += dt; if (n.chaseT > 3.5) { n.chaseT = 0; n.rest = 3; }
-    } else {                                                  // 배회
-      n.wt -= dt; if (n.wt <= 0) { n.wt = rnd(1, 3.5); n.wa = rnd(0, 6.28); }
-      sp *= n.rest > 0 ? 0.35 : 0.55;
-      n.chaseT = Math.max(0, n.chaseT - dt);
+    if (n.eating) { tickEating(n, dt); n.mode = 0; }
+    else {
+      n.mouth *= 0.8;
+      let sp = speedOf(n.r) * 0.62 * (n.giantT > 0 ? GIANT_SPEED : 1), want = n.wa, turn = 2.5, mode = 0;
+      n.rest = Math.max(0, n.rest - dt);
+      let stone = null, sd = 1e9;
+      if (n.greedy && n.giantT <= 0) for (const o of ores) {
+        const q = Math.hypot(o.x - n.x, o.y - n.y);
+        if (q < n.r * 10 && q < sd) { sd = q; stone = o; }
+      }
+      if (live && !hidden && edible && d < Math.min((ER(p) + ER(n)) * 3.4, vr * 1.2)) {       // 도망
+        want = Math.atan2(-dy, -dx); sp *= 1.3; turn = 6; mode = 1;
+      } else if (stone) {                                                                     // 마법의 돌을 노림
+        want = Math.atan2(stone.y - n.y, stone.x - n.x); sp *= 1.15; turn = 5; mode = 3;
+      } else if (live && !hidden && !edible && n.aggro && n.rest <= 0 && d < ER(n) * 3.5 + ER(p) * 2) {   // 추격
+        want = Math.atan2(dy, dx); sp *= 1.1; turn = 5; mode = 2;
+        n.chaseT += dt; if (n.chaseT > 3.5) { n.chaseT = 0; n.rest = 3; }
+      } else {                                                                                // 배회
+        n.wt -= dt; if (n.wt <= 0) { n.wt = rnd(1, 3.5); n.wa = rnd(0, 6.28); }
+        sp *= n.rest > 0 ? 0.35 : 0.55;
+        n.chaseT = Math.max(0, n.chaseT - dt);
+      }
+      n.mode = mode;
+      const m = n.r * 3;                                      // 맵 가장자리에서는 안쪽으로
+      if (n.x < m) want = 0; else if (n.x > WORLD - m) want = Math.PI;
+      if (n.y < m) want = Math.PI / 2; else if (n.y > WORLD - m) want = -Math.PI / 2;
+      let da = want - n.ang; da = Math.atan2(Math.sin(da), Math.cos(da));
+      n.ang += clamp(da, -turn * dt, turn * dt);
+      n.x = clamp(n.x + Math.cos(n.ang) * sp * dt, n.r, WORLD - n.r);
+      n.y = clamp(n.y + Math.sin(n.ang) * sp * dt, n.r, WORLD - n.r);
+      const c = Math.cos(n.ang); if (Math.abs(c) > 0.25) n.face = c > 0 ? 1 : -1;
+      n.phase += sp * dt / n.r * 2.4 / Math.sqrt(n.gm);
     }
-    n.mode = mode;
-    const m = n.r * 3;                                        // 맵 가장자리에서는 안쪽으로
-    if (n.x < m) want = 0; else if (n.x > WORLD - m) want = Math.PI;
-    if (n.y < m) want = Math.PI / 2; else if (n.y > WORLD - m) want = -Math.PI / 2;
-    let da = want - n.ang; da = Math.atan2(Math.sin(da), Math.cos(da));
-    n.ang += clamp(da, -turn * dt, turn * dt);
-    n.x = clamp(n.x + Math.cos(n.ang) * sp * dt, n.r, WORLD - n.r);
-    n.y = clamp(n.y + Math.sin(n.ang) * sp * dt, n.r, WORLD - n.r);
-    const c = Math.cos(n.ang); if (Math.abs(c) > 0.25) n.face = c > 0 ? 1 : -1;
-    n.phase += sp * dt / n.r * 2.4;
 
     if (!live) continue;
-    const touch = Math.max(p.r, n.r) * 0.9 + Math.min(p.r, n.r) * 0.3;
+    const a = ER(p), b = ER(n), touch = Math.max(a, b) * 0.9 + Math.min(a, b) * 0.3;
     if (edible) {
-      const nd = (d - touch) / p.r; if (nd < nearEd) nearEd = nd;
-      if (d < touch) {                                        // 냠!
-        const before = kgOf(p.r);
-        grow(p, n.r);
-        const gain = kgOf(p.r) - before;
-        eaten++; p.chomp = 1;
-        burst(n.x, n.y, n.r, n.col, 10);
-        texts.push({x: n.x, y: n.y - n.r, s: '+' + fmtKg(gain), life: 1, big: n.r > p.r});
-        beep(n.r > p.r ? 160 : 320, 70, 0.16, 'square', 0.09);
-        npcs.splice(i, 1);
-        const t = tierOf(kgOf(p.r));
-        if (t > curTier) { curTier = t; toast('성장! ' + TIERS[t][1]); beep(440, 880, 0.35, 'triangle', 0.1); }
-        if (kgOf(p.r) >= WIN_KG) { endGame('win'); return; }
+      const nd = (d - touch) / a; if (nd < nearEd) nearEd = nd;
+      if (d < touch && !p.eating) {                           // 덥석! 물고 뜯어먹기 시작
+        if (Math.abs(dx) > 1) p.face = dx < 0 ? 1 : -1;
+        startEating(p, n); npcs.splice(i, 1);
+        burst(n.x, n.y, b, n.col, 6); beep(260, 120, 0.08, 'square', 0.07);
       }
     } else if (d < touch) {                                   // 큰 공룡에게 잡아먹힘
-      burst(p.x, p.y, p.r, p.col, 22); cam.shake = 0.5;
-      grow(n, p.r);
-      beep(220, 40, 0.6, 'sawtooth', 0.12);
-      endGame('dead'); return;
+      if (Math.abs(dx) > 1) n.face = dx > 0 ? 1 : -1;
+      burst(p.x, p.y, a, p.col, 18);
+      p.eating = null; startEating(n, p);
+      die('eaten'); break;
     }
   }
-  p.mouth += ((nearEd < 2.2 || p.chomp > 0 ? 1 : 0) - p.mouth) * (1 - Math.exp(-dt * 12));
+  if (!p.eating) p.mouth += ((nearEd < 2.2 || p.chomp > 0 ? 1 : 0) - p.mouth) * (1 - Math.exp(-dt * 12));
 
   // 공룡끼리도 큰 쪽이 작은 쪽을 잡아먹음
   for (let i = 0; i < npcs.length; i++) {
-    const a = npcs[i]; if (!a) continue;
+    const a = npcs[i];
     for (let j = npcs.length - 1; j > i; j--) {
       const b = npcs[j];
-      const big = a.r >= b.r ? a : b, small = big === a ? b : a;
-      if (big.r < small.r * 1.25) continue;
-      const dx = a.x - b.x, dy = a.y - b.y;
-      if (dx * dx + dy * dy < big.r * big.r * 0.7) {
-        if (big.r < p.r * 2.5) grow(big, small.r * 0.7);
-        burst(small.x, small.y, small.r, small.col, 5);
+      const big = ER(a) >= ER(b) ? a : b, small = big === a ? b : a;
+      if (big.eating || ER(big) < ER(small) * 1.25) continue;
+      const dx = a.x - b.x, dy = a.y - b.y, R = ER(big);
+      if (dx * dx + dy * dy < R * R * 0.7) {
+        if (Math.abs(dx) > 1) big.face = (small.x > big.x) ? 1 : -1;
+        startEating(big, small);
         if (small === a) { npcs[i] = npcs[npcs.length - 1]; npcs.pop(); break; }
         npcs.splice(j, 1);
       }
     }
   }
-  let guard = 6;
-  while (npcs.length < NPC_TARGET && guard--) spawnNpc(false);
+  let guard = 8;
+  const target = live && p.giantT > 0 ? 70 : NPC_TARGET;
+  while (npcs.length < target && guard--) spawnNpc(false);
 
-  // 광석
+  // 마법의 돌: 어떤 공룡이든 먹으면 거대화
   for (let i = ores.length - 1; i >= 0; i--) {
-    const o = ores[i]; o.t += dt;
-    const d = Math.hypot(o.x - p.x, o.y - p.y);
-    if (d > vr * 7) { ores.splice(i, 1); continue; }
-    if (live && d < p.r + o.r) {
-      ores.splice(i, 1); power = POWER_TIME;
-      burst(o.x, o.y, o.r * 1.5, '#8ff3ff', 18);
-      toast('신비의 광석! 큰 공룡도 잡아먹자!');
-      beep(520, 1560, 0.45, 'sine', 0.12);
+    const o = ores[i]; o.t += dt; o.life -= dt;
+    if (o.life <= 0) { burst(o.x, o.y, o.r, '#c9b8ff', 8); ores.splice(i, 1); continue; }
+    let who = null;
+    if (live && Math.hypot(o.x - p.x, o.y - p.y) < ER(p) + o.r) who = p;
+    else for (const n of npcs) if (!n.eating && Math.hypot(o.x - n.x, o.y - n.y) < ER(n) * 0.9 + o.r) { who = n; break; }
+    if (!who) continue;
+    ores.splice(i, 1);
+    burst(o.x, o.y, o.r * 1.5, '#8ff3ff', 18);
+    if (who === p) {
+      p.giantT = GIANT_TIME;
+      toast('마법의 돌! 몸이 ' + GIANT + '배로 커졌다!'); beep(520, 1560, 0.45, 'sine', 0.12);
+    } else {
+      who.giantT = NPC_GIANT_TIME; who.aggro = true; who.rest = 0; who.chaseT = 0;
+      if (live && Math.hypot(who.x - p.x, who.y - p.y) < vr * 1.3) { toast('⚠ 거대 공룡 출현! 도망쳐!'); beep(200, 90, 0.5, 'sawtooth', 0.1); }
     }
   }
+
+  // 운석
+  for (let i = meteors.length - 1; i >= 0; i--) {
+    const m = meteors[i]; m.t -= dt;
+    if (m.t > 0) continue;
+    meteors.splice(i, 1);
+    cam.shake = Math.max(cam.shake, 0.45); beep(140, 30, 0.7, 'sawtooth', 0.14);
+    burst(m.x, m.y, m.R * 0.5, '#ff9a3c', 26); burst(m.x, m.y, m.R * 0.35, '#6b5a48', 14);
+    for (let j = npcs.length - 1; j >= 0; j--) {
+      const n = npcs[j];
+      if (n.gm < 1.5 && Math.hypot(n.x - m.x, n.y - m.y) < m.R) { burst(n.x, n.y, n.r, n.col, 8); npcs.splice(j, 1); }
+    }
+    if (ores.length < 4) spawnOre(m.x, m.y);
+    if (live && p.gm < 1.5 && Math.hypot(p.x - m.x, p.y - m.y) < m.R * 0.9) { burst(p.x, p.y, p.r, p.col, 22); die('meteor'); }
+  }
+
+  // 알: 조금씩 몸을 키워 주는 간식
+  for (let i = eggs.length - 1; i >= 0; i--) {
+    const g = eggs[i], d = Math.hypot(g.x - p.x, g.y - p.y);
+    if (d > vr * 3.2 || (g.r < p.r * 0.15 && d > vr * 1.1)) { eggs.splice(i, 1); continue; }
+    if (live && d < ER(p) * 0.9 + g.r * 0.3) {
+      eggs.splice(i, 1); grow(p, g.r); p.chomp = 1;
+      burst(g.x, g.y, g.r, '#fff3c4', 5); beep(700, 500, 0.06, 'sine', 0.05);
+      if (kgOf(p.r) >= WIN_KG) endGame('win');
+    }
+  }
+  guard = 4; while (eggs.length < EGG_TARGET && guard--) spawnEgg(false);
+  for (let i = bushes.length - 1; i >= 0; i--) {
+    const b = bushes[i], d = Math.hypot(b.x - p.x, b.y - p.y);
+    if (d > vr * 3.5 + b.r || (b.r < p.r * 1.8 && d > vr * 1.2 + b.r)) bushes.splice(i, 1);
+  }
+  if (bushes.length < BUSH_TARGET) spawnBush(false);
 
   for (let i = parts.length - 1; i >= 0; i--) {
     const q = parts[i]; q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.92; q.vy *= 0.92;
     if (q.life <= 0) parts.splice(i, 1);
   }
-  for (let i = texts.length - 1; i >= 0; i--) { const t = texts[i]; t.life -= dt; t.y -= p.r * 1.6 * dt; if (t.life <= 0) texts.splice(i, 1); }
+  for (let i = texts.length - 1; i >= 0; i--) { const t = texts[i]; t.life -= dt; t.y -= ER(p) * 1.2 * dt; if (t.life <= 0) texts.splice(i, 1); }
 
-  // 카메라: 몸이 커질수록 화면이 넓어짐
-  const ts = Math.min(W, H) / (p.r * 17);
+  // 카메라: 몸이 커질수록(거대 공룡이 나타나도) 화면이 넓어짐
+  const ts = Math.min(W, H) / (p.r * 17 * camMul);
   cam.scale += (ts - cam.scale) * (1 - Math.exp(-dt * 2.5));
   cam.x = p.x; cam.y = p.y;
   cam.shake = Math.max(0, cam.shake - dt);
 }
 
 function endGame(kind) {
-  state = kind; deadT = 0;
+  if (state !== 'play') return;
+  state = kind;
   const kg = kgOf(player.r);
   if (kg > best) { best = kg; try { localStorage.setItem('chomprex_best', String(best)); } catch (e) {} }
   if (kind === 'win') { beep(523, 1046, 0.7, 'triangle', 0.12); }
-  setTimeout(() => showPanel(kind), kind === 'win' ? 500 : 900);
+  setTimeout(() => showPanel(kind), kind === 'win' ? 500 : 1400);
 }
 
 /* ===================== 그리기: 공룡 ===================== */
@@ -430,29 +597,47 @@ function drawDino(d) {
   }
   ctx.strokeStyle = c; leg(-0.32, 0.3, 0.65, s, 0.23); leg(0.34, 0.3, 0.65, -s, 0.23);
 }
+const SX = x => (x - cam.x) * cam.scale + W / 2, SY = y => (y - cam.y) * cam.scale + H / 2;
 function drawEntity(e, isPlayer) {
-  const sx = (e.x - cam.x) * cam.scale + W / 2, sy = (e.y - cam.y) * cam.scale + H / 2, pr = e.r * cam.scale;
+  const sx = SX(e.x), sy = SY(e.y), pr = ER(e) * cam.scale;
   if (sx < -pr * 2.5 || sx > W + pr * 2.5 || sy < -pr * 2.5 || sy > H + pr * 2.5) return;
+  const fade = Math.min(1, e.age * 2.5);
+  ctx.globalAlpha = fade;
   // 발밑 표시: 초록 = 먹을 수 있음, 빨강 = 위험
   ctx.fillStyle = 'rgba(0,0,0,.22)';
   ctx.beginPath(); ctx.ellipse(sx, sy + pr * 0.95, pr * 1.0, pr * 0.26, 0, 0, 6.2832); ctx.fill();
+  const danger = !isPlayer && state === 'play' && !canEat(e);
   if (!isPlayer && state === 'play') {
-    const ed = canEat(e);
-    ctx.strokeStyle = ed ? 'rgba(150,255,120,.75)' : 'rgba(255,70,50,.95)';
-    ctx.lineWidth = Math.max(1.5, pr * (ed ? 0.06 : 0.1)); ctx.stroke();
+    ctx.strokeStyle = danger ? 'rgba(255,70,50,.95)' : 'rgba(150,255,120,.75)';
+    ctx.lineWidth = Math.max(1.5, pr * (danger ? 0.1 : 0.06)); ctx.stroke();
   }
-  if (isPlayer && power > 0) {
-    const pulse = 1.5 + Math.sin(time * 10) * 0.12, blink = power < 2 && Math.sin(time * 22) > 0 ? 0.25 : 0.6;
-    const g = ctx.createRadialGradient(sx, sy, pr * 0.3, sx, sy, pr * pulse * 1.3);
-    g.addColorStop(0, 'rgba(120,240,255,' + blink + ')'); g.addColorStop(1, 'rgba(190,120,255,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, pr * pulse * 1.3, 0, 6.2832); ctx.fill();
+  if (e.gm > 1.15) {                                          // 거대화 오라
+    const T = e.giantT, pulse = 1.5 + Math.sin(time * 10) * 0.1, a = T < 2 && Math.sin(time * 22) > 0 ? 0.15 : 0.5;
+    const g = ctx.createRadialGradient(sx, sy, pr * 0.3, sx, sy, pr * pulse * 1.25);
+    g.addColorStop(0, isPlayer ? 'rgba(120,240,255,' + a + ')' : 'rgba(255,90,60,' + a + ')'); g.addColorStop(1, 'rgba(190,120,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, pr * pulse * 1.25, 0, 6.2832); ctx.fill();
   }
   ctx.save(); ctx.translate(sx, sy); ctx.scale(pr * e.face, pr);
   drawDino(e);
   ctx.restore();
-  if (!isPlayer && state === 'play' && !canEat(e) && pr > 6) {
-    ctx.fillStyle = '#ff4a36'; ctx.font = '900 ' + Math.max(12, pr * 0.5) + 'px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('!', sx, sy - pr * (e.kind === 'sauro' ? 1.9 : 1.15));
+  const E = e.eating;
+  if (E) {                                                    // 입에 문 먹잇감: 발버둥 치며 점점 줄어든다
+    const k = clamp(E.t / E.dur, 0, 1), m = MOUTH[e.kind], qs = E.size * cam.scale * (1 - 0.8 * k);
+    const mx = sx + e.face * m[0] * pr, my = sy + m[1] * pr;
+    ctx.save(); ctx.translate(mx, my); ctx.rotate(Math.sin(E.t * 28) * 0.35 + 0.4 * e.face);
+    ctx.globalAlpha = fade * (1 - k * 0.3); ctx.scale(qs * e.face, qs);
+    drawDino(E.prey); ctx.restore();
+    if (isPlayer && E.dur > 0.35) {                           // 먹는 진행도
+      const ry = sy - pr * 1.6, rr = Math.max(9, pr * 0.3);
+      ctx.globalAlpha = 1; ctx.lineWidth = Math.max(3, rr * 0.35); ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.arc(sx, ry, rr, 0, 6.2832); ctx.stroke();
+      ctx.strokeStyle = '#ffd54a'; ctx.beginPath(); ctx.arc(sx, ry, rr, -1.5708, -1.5708 + 6.2832 * k); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+  if (danger && pr > 6) {
+    ctx.fillStyle = '#ff4a36'; ctx.font = '900 ' + clamp(pr * 0.5, 12, 60) + 'px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(e.gm > 1.15 ? '!!' : '!', sx, sy - pr * (e.kind === 'sauro' ? 1.9 : 1.15));
   }
 }
 
@@ -500,8 +685,9 @@ function drawDecor() {
   ctx.globalAlpha = 1;
 }
 function drawOre(o) {
-  const sx = (o.x - cam.x) * cam.scale + W / 2, sy = (o.y - cam.y) * cam.scale + H / 2, pr = Math.max(7, o.r * cam.scale);
+  const sx = SX(o.x), sy = SY(o.y), pr = Math.max(7, o.r * cam.scale) * Math.min(1, o.t * 3);
   if (sx < -pr * 4 || sx > W + pr * 4 || sy < -pr * 4 || sy > H + pr * 4) return false;
+  if (o.life < 3 && Math.sin(o.life * 14) > 0.2) return true;               // 사라지기 직전 깜빡임
   const pulse = 1 + Math.sin(o.t * 4) * 0.15;
   const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, pr * 3 * pulse);
   g.addColorStop(0, 'rgba(140,245,255,.75)'); g.addColorStop(1, 'rgba(170,120,255,0)');
@@ -513,6 +699,40 @@ function drawOre(o) {
   ctx.fillStyle = '#a77bff'; ctx.beginPath(); ctx.moveTo(sx, sy + pr * 1.1 + bob); ctx.lineTo(sx - pr * 0.8, sy - pr * 0.2 + bob); ctx.lineTo(sx, sy - pr * 0.05 + bob); ctx.fill();
   return true;
 }
+function drawEgg(g) {
+  const sx = SX(g.x), sy = SY(g.y), pr = g.r * cam.scale;
+  if (pr < 1.2 || sx < -pr * 2 || sx > W + pr * 2 || sy < -pr * 2 || sy > H + pr * 2) return;
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(sx, sy + pr * 0.9, pr * 0.8, pr * 0.25, 0, 0, 6.2832); ctx.fill();
+  ctx.fillStyle = g.col; ctx.beginPath(); ctx.ellipse(sx, sy, pr * 0.75, pr, g.rot, 0, 6.2832); ctx.fill();
+  if (pr > 5) { ctx.fillStyle = 'rgba(150,120,80,.55)'; ctx.beginPath(); ctx.arc(sx - pr * 0.2, sy - pr * 0.3, pr * 0.14, 0, 6.2832); ctx.arc(sx + pr * 0.25, sy + pr * 0.2, pr * 0.11, 0, 6.2832); ctx.fill(); }
+}
+function drawBush(b) {
+  const sx = SX(b.x), sy = SY(b.y), pr = b.r * cam.scale;
+  if (sx < -pr * 1.6 || sx > W + pr * 1.6 || sy < -pr * 1.6 || sy > H + pr * 1.6) return;
+  const inside = state === 'play' && Math.hypot(b.x - player.x, b.y - player.y) < b.r * 1.1;
+  ctx.globalAlpha = inside ? 0.38 : 0.93;
+  for (let i = 0; i < 9; i++) {
+    const a = i / 9 * 6.2832 + hash(b.seed, i, 5), q = i === 8 ? 0 : 0.55 + hash(b.seed, i, 6) * 0.2, s = 0.5 + hash(b.seed, i, 7) * 0.18;
+    ctx.fillStyle = i % 3 === 0 ? '#2c7a37' : i % 3 === 1 ? '#3a9145' : '#256b30';
+    ctx.beginPath(); ctx.arc(sx + Math.cos(a) * q * pr, sy + Math.sin(a) * q * pr * 0.8, pr * (i === 8 ? 0.62 : s), 0, 6.2832); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+function drawMeteor(m, falling) {
+  const sx = SX(m.x), sy = SY(m.y), pr = m.R * cam.scale, k = 1 - m.t / m.max;
+  if (!falling) {                                             // 낙하 지점 경고
+    ctx.fillStyle = 'rgba(255,60,30,' + (0.14 + 0.1 * Math.sin(time * 16)) + ')';
+    ctx.beginPath(); ctx.ellipse(sx, sy, pr, pr * 0.8, 0, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,80,40,.9)'; ctx.lineWidth = 3; ctx.setLineDash([10, 8]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(sx, sy, pr * k, pr * 0.8 * k, 0, 0, 6.2832); ctx.fill();
+    return;
+  }
+  const off = (1 - k) * Math.max(W, H) * 0.9, mx = sx + off * 0.6, my = sy - off, rr = Math.max(10, pr * 0.3);
+  ctx.strokeStyle = 'rgba(255,170,60,.7)'; ctx.lineWidth = rr * 1.2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx + rr * 2.4, my - rr * 4); ctx.stroke();
+  ctx.fillStyle = '#ff7b2e'; ctx.beginPath(); ctx.arc(mx, my, rr, 0, 6.2832); ctx.fill();
+  ctx.fillStyle = '#5b4636'; ctx.beginPath(); ctx.arc(mx - rr * 0.1, my + rr * 0.1, rr * 0.72, 0, 6.2832); ctx.fill();
+}
 
 /* ===================== 렌더 ===================== */
 function render() {
@@ -520,36 +740,41 @@ function render() {
   ctx.fillStyle = '#1d6fa5'; ctx.fillRect(0, 0, W, H);                       // 바다
   ctx.save();
   if (cam.shake > 0) ctx.translate(rnd(-1, 1) * cam.shake * 24, rnd(-1, 1) * cam.shake * 24);
-  const lx = (0 - cam.x) * cam.scale + W / 2, ly = (0 - cam.y) * cam.scale + H / 2, ls = WORLD * cam.scale, b = 60 * cam.scale + 6;
+  const lx = SX(0), ly = SY(0), ls = WORLD * cam.scale, b = 60 * cam.scale + 6;
   ctx.fillStyle = '#e2cf93'; ctx.fillRect(lx - b, ly - b, ls + b * 2, ls + b * 2);  // 모래사장
   ctx.fillStyle = '#7bb661'; ctx.fillRect(lx, ly, ls, ls);                    // 초원
   drawDecor();
+  for (const m of meteors) drawMeteor(m, false);
+  for (const g of eggs) drawEgg(g);
   let oreSeen = false;
   for (const o of ores) if (drawOre(o)) oreSeen = true;
 
   const list = npcs.slice();
   if (state !== 'dead') list.push(player);
-  list.sort((a, c) => (a.y + a.r) - (c.y + c.r));
+  list.sort((a, c) => (a.y + ER(a)) - (c.y + ER(c)));
   for (const e of list) drawEntity(e, e === player);
+  for (const bu of bushes) drawBush(bu);
 
   for (const q of parts) {
     ctx.globalAlpha = clamp(q.life / q.max, 0, 1); ctx.fillStyle = q.col;
-    ctx.beginPath(); ctx.arc((q.x - cam.x) * cam.scale + W / 2, (q.y - cam.y) * cam.scale + H / 2, Math.max(1, q.r * cam.scale), 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.arc(SX(q.x), SY(q.y), Math.max(1, q.r * cam.scale), 0, 6.2832); ctx.fill();
   }
+  ctx.globalAlpha = 1;
+  for (const m of meteors) drawMeteor(m, true);
   ctx.textAlign = 'center';
   for (const t of texts) {
     ctx.globalAlpha = clamp(t.life * 2, 0, 1);
-    ctx.font = '800 ' + (t.big ? 24 : 16) + 'px sans-serif';
-    const x = (t.x - cam.x) * cam.scale + W / 2, y = (t.y - cam.y) * cam.scale + H / 2;
+    ctx.font = '800 ' + (t.big ? 22 : 16) + 'px sans-serif';
+    const x = SX(t.x), y = SY(t.y);
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(t.s, x, y);
-    ctx.fillStyle = t.big ? '#8ff3ff' : '#fff7b0'; ctx.fillText(t.s, x, y);
+    ctx.fillStyle = t.big ? '#ffc46b' : '#fff7b0'; ctx.fillText(t.s, x, y);
   }
   ctx.globalAlpha = 1;
   ctx.restore();
 
   if (state === 'play') {
-    // 화면 밖 광석 방향 표시
-    if (!oreSeen && ores.length && power <= 0) {
+    // 화면 밖 마법의 돌 방향 표시
+    if (!oreSeen && ores.length && player.giantT <= 0) {
       let o = ores[0]; for (const q of ores) if (Math.hypot(q.x - player.x, q.y - player.y) < Math.hypot(o.x - player.x, o.y - player.y)) o = q;
       const a = Math.atan2(o.y - player.y, o.x - player.x), m = 34;
       const k = Math.min((W / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - m) / Math.abs(Math.sin(a) || 1e-6));
@@ -575,6 +800,7 @@ function toast(s) { const t = $('toast'); t.textContent = s; t.style.opacity = 1
 function updateHud() {
   const show = state !== 'menu';
   $('hud').style.display = show ? 'block' : 'none';
+  dashEl.style.display = state === 'play' ? 'flex' : 'none';
   if (!show) return;
   const kg = kgOf(player.r), t = tierOf(kg);
   $('species').textContent = TIERS[t][1];
@@ -582,23 +808,30 @@ function updateHud() {
   $('goalFill').style.width = clamp(Math.log(kg / BASE_KG) / Math.log(WIN_KG / BASE_KG) * 100, 0, 100) + '%';
   $('count').textContent = '잡아먹은 공룡 ' + eaten;
   $('best').textContent = '최고 ' + fmtKg(Math.max(best, kg));
-  $('powerWrap').style.display = power > 0 ? 'block' : 'none';
-  if (power > 0) $('powerFill').style.width = (power / POWER_TIME * 100) + '%';
+  const gt = player.giantT;
+  $('powerWrap').style.display = gt > 0 ? 'block' : 'none';
+  if (gt > 0) $('powerFill').style.width = (gt / GIANT_TIME * 100) + '%';
+  $('combo').style.display = combo > 1 && state === 'play' ? 'block' : 'none';
+  if (combo > 1) $('combo').textContent = '콤보 x' + combo + '  성장 +' + Math.round(Math.min(1, (combo - 1) * 0.1) * 100) + '%';
+  $('hide').style.display = hidden ? 'block' : 'none';
+  dashEl.style.background = 'conic-gradient(' + (stamina > 0.15 ? '#ffb52e ' : '#c0503a ') + (stamina * 100) + '%,rgba(0,0,0,.4) 0)';
+  dashEl.className = dashing ? 'on' : '';
 }
 function showPanel(kind) {
   const kg = player ? kgOf(player.r) : 0;
   let h;
   if (kind === 'menu') {
     h = '<h1>🦖 ChompRex</h1><h2>먹고, 자라고, 최강의 공룡이 되자!</h2><ul>' +
-        '<li>화면을 <b>드래그</b>해서 공룡을 움직이세요.</li>' +
-        '<li>나보다 <span class="g">작거나 비슷한 공룡(초록 표시)</span>을 잡아먹으면 그만큼 몸이 커집니다.</li>' +
-        '<li>나보다 <span class="r">큰 공룡(빨강 표시 !)</span>은 피하세요. 잡아먹힙니다!</li>' +
-        '<li>드물게 나타나는 <span class="c">신비의 광석 ◆</span>을 먹으면 ' + POWER_TIME + '초 동안 큰 공룡도 잡아먹을 수 있습니다.</li>' +
+        '<li>화면을 <b>드래그</b>해서 움직이고, <span class="o">돌진</span> 버튼으로 잠깐 빨리 달립니다.</li>' +
+        '<li><span class="g">작거나 비슷한 공룡(초록)</span>을 물면 뜯어먹습니다. 큰 먹잇감일수록 오래 걸리고, 먹는 동안은 느려집니다.</li>' +
+        '<li><span class="r">큰 공룡(빨강 !)</span>은 피하세요. <b>덤불</b>에 숨으면 들키지 않습니다.</li>' +
+        '<li><span class="c">마법의 돌 ◆</span>을 먹으면 잠시 몸이 ' + GIANT + '배, 속도가 ' + GIANT_SPEED + '배! 다른 공룡이 먼저 먹으면 그 공룡이 거대해집니다.</li>' +
+        '<li>연속으로 잡아먹으면 <span class="o">콤보</span> 보너스. 알은 간식, <span class="r">운석</span>은 피하세요.</li>' +
         '<li>몸무게 ' + fmtKg(WIN_KG) + '의 대왕 티라노사우루스가 되면 승리!</li></ul>' +
         '<button id="btn">게임 시작</button>';
   } else if (kind === 'dead') {
-    h = '<h1>잡아먹혔다!</h1><div class="res">' + TIERS[tierOf(kg)][1] + ' · <b>' + fmtKg(kg) + '</b><br>잡아먹은 공룡 ' + eaten +
-        '마리<br>최고 기록 ' + fmtKg(best) + '</div><button id="btn">다시 도전</button>';
+    h = '<h1>' + (deathWhy === 'meteor' ? '운석에 맞았다!' : '잡아먹혔다!') + '</h1><div class="res">' + TIERS[tierOf(kg)][1] + ' · <b>' + fmtKg(kg) +
+        '</b><br>잡아먹은 공룡 ' + eaten + '마리<br>최고 기록 ' + fmtKg(best) + '</div><button id="btn">다시 도전</button>';
   } else {
     h = '<h1>👑 공룡의 왕!</h1><div class="res">몸무게 <b>' + fmtKg(kg) + '</b>의 대왕 티라노사우루스가 되었습니다.<br>잡아먹은 공룡 ' + eaten +
         '마리 · ' + Math.round(time) + '초</div><button id="btn">다시 하기</button>';
@@ -612,10 +845,9 @@ function showPanel(kind) {
 let last = 0, hudTick = 0;
 function frame(ts) {
   const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
-  if (state === 'dead' || state === 'win') deadT += dt;
   update(dt);
   render();
-  if (++hudTick % 5 === 0) updateHud();
+  if (++hudTick % 4 === 0) updateHud();
   requestAnimationFrame(frame);
 }
 document.addEventListener('visibilitychange', () => { last = performance.now(); });
@@ -624,7 +856,10 @@ showPanel('menu');
 updateHud();
 requestAnimationFrame(frame);
 window.__game = {get state() { return state; }, get player() { return player; }, get npcs() { return npcs; }, get ores() { return ores; },
-  get power() { return power; }, input, kgOf, spawnOre, canEat};
+  get eggs() { return eggs; }, get bushes() { return bushes; }, get meteors() { return meteors; }, get combo() { return combo; },
+  get stamina() { return stamina; }, get hidden() { return hidden; }, get why() { return deathWhy; },
+  set meteorTimer(v) { meteorTimer = v; }, set oreTimer(v) { oreTimer = v; }, set dash(v) { dashHeld = v; },
+  input, kgOf, ER, speedOf, spawnOre, spawnMeteor, canEat};
 </script>
 </body>
 </html>
