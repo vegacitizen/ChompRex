@@ -244,7 +244,7 @@ function newStage(i, r) {
   st = {maxCombo: 0, bigEats: 0, o2Out: false, bossFire: 0};
   curTier = tierOf(kgOf(r));
   player = {x: WORLD / 2, y: WORLD / 2, r, gm: 1, gmax: 1, giantT: 0, aim: 0, shieldT: 0, eating: null, ang: 0, spd: 0, sharp: 0, lean: 0, pop: 0, happyT: 0, stepS: false, bl: 0, face: 1, phase: 0,
-            mouth: 0, chomp: 0, age: 9, kind: 'rex', col: TIER_COLS[curTier], dark: shade(TIER_COLS[curTier], 0.68)};
+            mouth: 0, chomp: 0, age: 9, kind: STAGES[i].id === 'sea' ? 'mosa' : 'rex', col: TIER_COLS[curTier], dark: shade(TIER_COLS[curTier], 0.68)};
   npcs = []; ores = []; eggs = []; bushes = []; meteors = []; parts = []; texts = []; rings = []; shots = []; baits = [];
   itemCd = ITEMS.map(() => 0); itemSeen = ITEMS.map(it => kgOf(r) >= it.unlock);
   if (i === 0) eaten = 0;
@@ -564,7 +564,7 @@ function die(why) { deathWhy = why; cam.shake = 0.5; beep(220, 40, 0.6, 'sawtoot
 /* ===================== 입력 ===================== */
 const input = {id: -1, ox: 0, oy: 0, x: 0, y: 0, dx: 0, dy: 0};
 const keys = {};
-let dashHeld = false;
+let dashHeld = false, freeDash = false;
 cv.addEventListener('pointerdown', e => {
   initAudio();
   if (input.id !== -1) return;
@@ -611,7 +611,8 @@ function update(dt) {
     const was = dashing;
     dashing = wantDash && (dashing ? stamina > 0 : stamina > 0.15);
     if (dashing && !was) { dust(p, 0.7, 7); beep(240, 520, 0.12, 'triangle', 0.05); }     // 돌진 시작: 땅을 박차는 흙먼지
-    stamina = clamp(stamina + (dashing ? -0.5 : 0.22) * dt, 0, 1);
+    freeDash = phase === 'escape' || meteors.length > 0;      // 하늘에서 무언가 떨어지는 동안에는 스태미나가 줄지 않는다
+    stamina = clamp(stamina + (dashing && !freeDash ? -0.5 : 0.22) * dt, 0, 1);
     const mag = Math.min(1, Math.hypot(ix, iy)), ref = speedOf(p.r);
     const top = ref * (p.giantT > 0 ? GIANT_SPEED : 1) * (dashing ? 1.75 : 1) * (p.eating ? 0.35 : 1);
     steer(p, Math.atan2(iy, ix), mag, top, ref, dt, 1, true);
@@ -690,10 +691,11 @@ function update(dt) {
     }
 
     if (!live) continue;
-    const a = ER(p), b = ER(n), touch = Math.max(a, b) * 0.9 + Math.min(a, b) * 0.3;
+    const a = ER(p), b = ER(n), touch = Math.max(a, b) * 0.9 + Math.min(a, b) * 0.3;   // 큰 공룡에게 물리는 거리
+    const bite = (a + b) * 0.95;                              // 내가 무는 거리: 몸이 살짝만 겹쳐도 닿는다
     if (edible) {
-      const nd = (d - touch) / a; if (nd < nearEd) nearEd = nd;
-      if (d < touch && !p.eating) {                           // 덥석! 물고 뜯어먹기 시작
+      const nd = (d - bite) / a; if (nd < nearEd) nearEd = nd;
+      if (d < bite && !p.eating) {                           // 덥석! 물고 뜯어먹기 시작
         if (Math.abs(dx) > 1) p.face = dx < 0 ? 1 : -1;
         startEating(p, n); npcs.splice(i, 1);
         burst(n.x, n.y, b, n.col, 6); beep(260, 120, 0.08, 'square', 0.07);
@@ -775,7 +777,7 @@ function update(dt) {
   for (let i = eggs.length - 1; i >= 0; i--) {
     const g = eggs[i], d = Math.hypot(g.x - p.x, g.y - p.y);
     if (d > vr * 3.2 || (g.r < p.r * 0.15 && d > vr * 1.1)) { eggs.splice(i, 1); continue; }
-    if (live && d < ER(p) * 0.9 + g.r * 0.3) {
+    if (live && d < (ER(p) + g.r) * 0.95) {
       eggs.splice(i, 1); grow(p, g.r); p.chomp = 1; p.pop = Math.max(p.pop, 0.5); p.happyT = Math.max(p.happyT, 0.35);
       burst(g.x, g.y, g.r, '#fff3c4', 5); beep(700, 500, 0.06, 'sine', 0.05);
       if (S().id === 'sea') o2 = Math.min(1, o2 + 0.3);         // 바다에서는 공기 방울
@@ -1298,7 +1300,7 @@ function updateHud() {
   dashEl.style.display = state === 'play' ? 'flex' : 'none';
   if (!show) return;
   const kg = kgOf(player.r), t = tierOf(kg);
-  $('species').textContent = TIERS[t][1];
+  $('species').textContent = S().id === 'sea' ? '모사사우루스' : TIERS[t][1];
   $('weight').textContent = '몸무게 ' + fmtKg(kg);
   const s = S(), k0 = kgOf(stageStartR);
   $('stage').textContent = '스테이지 ' + (stage + 1) + ' · ' + s.name;
@@ -1318,7 +1320,9 @@ function updateHud() {
   $('combo').style.display = combo > 1 && state === 'play' ? 'block' : 'none';
   if (combo > 1) $('combo').textContent = '콤보 x' + combo + '  성장 +' + Math.round(Math.min(1, (combo - 1) * 0.1) * 100) + '%';
   $('hide').style.display = hidden ? 'block' : 'none';
-  dashEl.style.background = 'conic-gradient(' + (stamina > 0.15 ? '#ffb52e ' : '#c0503a ') + (stamina * 100) + '%,rgba(0,0,0,.4) 0)';
+  const fd = freeDash && state === 'play';
+  dashEl.style.background = fd ? 'conic-gradient(#7fe9ff 100%,rgba(0,0,0,.4) 0)' : 'conic-gradient(' + (stamina > 0.15 ? '#ffb52e ' : '#c0503a ') + (stamina * 100) + '%,rgba(0,0,0,.4) 0)';
+  dashEl.firstChild.textContent = fd ? '돌진 ∞' : '돌진';
   dashEl.className = dashing ? 'on' : '';
   $('items').style.display = state === 'play' ? 'flex' : 'none';
   for (let i = 0; i < ITEMS.length; i++) {
@@ -1378,7 +1382,7 @@ updateHud();
 requestAnimationFrame(frame);
 window.__game = {get state() { return state; }, get player() { return player; }, get npcs() { return npcs; }, get ores() { return ores; },
   get eggs() { return eggs; }, get bushes() { return bushes; }, get meteors() { return meteors; }, get combo() { return combo; },
-  get stamina() { return stamina; }, get hidden() { return hidden; }, get scared() { return scared; }, get why() { return deathWhy; },
+  get stamina() { return stamina; }, get hidden() { return hidden; }, get freeDash() { return freeDash; }, get scared() { return scared; }, get why() { return deathWhy; },
   set meteorTimer(v) { meteorTimer = v; }, set oreTimer(v) { oreTimer = v; }, set dash(v) { dashHeld = v; },
   get shots() { return shots; }, get baits() { return baits; }, get itemCd() { return itemCd; },
   input, kgOf, ER, speedOf, agility, spawnOre, spawnMeteor, canEat, useItem, ITEMS,
