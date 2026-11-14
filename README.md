@@ -103,4 +103,7 @@ Android Studio로 이 폴더를 열어 실행하거나, 명령줄에서:
 APK는 `app/build/outputs/apk/debug/app-debug.apk` 에 생성됩니다.
 GitHub Actions 실행 결과의 `ChompRex-debug-apk` 아티팩트에서도 내려받을 수 있습니다.
 
+디버그 APK는 저장소의 `app/debug.keystore`(공개된 테스트용 키)로 서명하므로, 새 빌드를 `adb install -r` 로 기존 설치 위에 덮어쓸 수 있습니다.
+`INSTALL_FAILED_UPDATE_INCOMPATIBLE` 가 나오면 예전 키로 서명된 버전이 깔려 있는 것이니 `adb uninstall com.vegacitizen.chomprex` 후 다시 설치하세요.
+
 게임 로직만 빠르게 확인하려면 `app/src/main/assets/index.html` 을 브라우저로 열면 됩니다 (방향키/WASD 또는 마우스 드래그).
